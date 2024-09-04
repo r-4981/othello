@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3 Player Othello</title>
+    <style>
+        .board {
+            display: grid;
+            grid-template-columns: repeat(10, 40px);
+            grid-template-rows: repeat(10, 40px);
+            gap: 2px;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+          position: relative;
+        }
+        .player1::before {
+            background-color: black;
+          width: 100%;
+          height: 100%;
+          display: block;
+          position: absolute;
+          content: "";
+          border-radius: 50%;
+        }
+        .player2::before {
+            background-color: #FFFFFF;
+          border: 2px solid #000000;
+          box-sizing: border-box;
+          width: 100%;
+          height: 100%;
+          display: block;
+          position: absolute;
+          content: "";
+          border-radius: 50%;
+        }
+        .player3::before {
+            background-color: blue;
+          border: 2px solid #000000;
+          box-sizing: border-box;
+          width: 100%;
+          height: 100%;
+          display: block;
+          position: absolute;
+          content: "";
+          border-radius: 50%;
+        }
+        .player4::before {
+            background-color: red;
+          border: 2px solid #000000;
+          box-sizing: border-box;
+          width: 100%;
+          height: 100%;
+          display: block;
+          position: absolute;
+          content: "";
+          border-radius: 50%;
+        }
+        .valid-move {
+            background-color: lightgreen;
+        }
+    </style>
+</head>
+<body>
+    <h1>4 Player Othello</h1>
+    <div id="currentPlayer">Current Player: 1 (Black)</div>
+    <div class="board" id="board"></div>
+    <script>
+        const boardSize = 10;
+        const board = [];
+        let currentPlayer = 1;
+        const boardElement = document.getElementById('board');
+        const currentPlayerElement = document.getElementById('currentPlayer');
+
+        function createBoard() {
+            for (let row = 0; row < boardSize; row++) {
+                board[row] = [];
+                for (let col = 0; col < boardSize; col++) {
+                    board[row][col] = 0;
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', handleCellClick);
+                    boardElement.appendChild(cell);
+                }
+            }
+
+            // 初期の配置
+            board[3][3] = 1;
+            board[3][4] = 2;
+            board[3][5] = 3;
+            board[3][6] = 4;
+            board[4][3] = 4;
+            board[4][4] = 1;
+            board[4][5] = 2;
+            board[4][6] = 3;
+            board[5][3] = 3;
+            board[5][4] = 4;
+            board[5][5] = 1;
+            board[5][6] = 2;
+            board[6][3] = 2;
+            board[6][4] = 3;
+            board[6][5] = 4;
+            board[6][6] = 1;
+
+            renderBoard();
+            highlightValidMoves();
+        }
+
+        function handleCellClick(event) {
+            const row = parseInt(event.target.dataset.row);
+            const col = parseInt(event.target.dataset.col);
+            if (isValidMove(row, col)) {
+                board[row][col] = currentPlayer;
+                flipDiscs(row, col);
+                renderBoard();
+                currentPlayer = (currentPlayer % 4) + 1;
+                if (!hasValidMove(currentPlayer)) {
+                    currentPlayer = (currentPlayer % 4) + 1;
+                    if (!hasValidMove(currentPlayer)) {
+                        currentPlayer = (currentPlayer % 4) + 1;
+                    }
+                }
+                updateCurrentPlayerDisplay();
+                highlightValidMoves();
+            }
+        }
+
+        function isValidMove(row, col) {
+            if (board[row][col] !== 0) return false;
+
+            const directions = [
+                [0, 1], [1, 0], [0, -1], [-1, 0],
+                [1, 1], [1, -1], [-1, 1], [-1, -1]
+            ];
+
+            for (const [dx, dy] of directions) {
+                let x = row + dx;
+                let y = col + dy;
+                let hasOpponentDisc = false;
+
+                while (x >= 0 && y >= 0 && x < boardSize && y < boardSize) {
+                    if (board[x][y] === 0) break;
+                    if (board[x][y] === currentPlayer) {
+                        if (hasOpponentDisc) return true;
+                        else break;
+                    }
+                    hasOpponentDisc = true;
+                    x += dx;
+                    y += dy;
+                }
+            }
+            return false;
+        }
+
+        function hasValidMove(player) {
+            for (let row = 0; row < boardSize; row++) {
+                for (let col = 0; col < boardSize; col++) {
+                    if (isValidMove(row, col)) return true;
+                }
+            }
+            return false;
+        }
+
+        function flipDiscs(row, col) {
+            const directions = [
+                [0, 1], [1, 0], [0, -1], [-1, 0],
+                [1, 1], [1, -1], [-1, 1], [-1, -1]
+            ];
+
+            for (const [dx, dy] of directions) {
+                let captured = [];
+                let x = row + dx;
+                let y = col + dy;
+                while (x >= 0 && y >= 0 && x < boardSize && y < boardSize) {
+                    if (board[x][y] === 0) break;
+                    if (board[x][y] === currentPlayer) {
+                        for (const [cx, cy] of captured) {
+                            board[cx][cy] = currentPlayer;
+                        }
+                        break;
+                    } else {
+                        captured.push([x, y]);
+                    }
+                    x += dx;
+                    y += dy;
+                }
+            }
+        }
+
+        function renderBoard() {
+            for (let row = 0; row < boardSize; row++) {
+                for (let col = 0; col < boardSize; col++) {
+                    const cell = boardElement.children[row * boardSize + col];
+                    cell.className = 'cell';
+                    if (board[row][col] === 1) {
+                        cell.classList.add('player1');
+                    } else if (board[row][col] === 2) {
+                        cell.classList.add('player2');
+                    } else if (board[row][col] === 3) {
+                        cell.classList.add('player3');
+                    } else if (board[row][col] === 4) {
+                        cell.classList.add('player4');
+                    }
+                }
+            }
+        }
+
+        function highlightValidMoves() {
+            for (let row = 0; row < boardSize; row++) {
+                for (let col = 0; col < boardSize; col++) {
+                    const cell = boardElement.children[row * boardSize + col];
+                    cell.classList.remove('valid-move');
+                    if (isValidMove(row, col)) {
+                        cell.classList.add('valid-move');
+                    }
+                }
+            }
+        }
+
+        function updateCurrentPlayerDisplay() {
+            const playerNames = ["1 (Black)", "2 (White)", "3 (Blue)", "4（Red）"];
+            currentPlayerElement.textContent = `Current Player: ${playerNames[currentPlayer - 1]}`;
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
